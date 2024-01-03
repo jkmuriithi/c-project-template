@@ -5,6 +5,7 @@
 
 # Directories
 SRC_DIR     := src
+SRC_SUBDIRS :=
 INCLUDE_DIR := include
 LIB_DIR     := lib
 OBJ_DIR     := obj
@@ -13,11 +14,12 @@ BIN_DIR     := bin
 # Files
 EXE := $(BIN_DIR)/main
 SRC := $(wildcard $(SRC_DIR)/*.c)
+SRC += $(foreach sub, $(SRC_SUBDIRS), $(wildcard $(SRC_DIR)/$(sub)/*.c))
 OBJ := $(patsubst $(SRC_DIR)/%.c, $(OBJ_DIR)/%.o, $(SRC))
 
 # Compiler settings
-CC     := gcc
-CFLAGS := -std=c17 -g -O2
+CC       := gcc
+CFLAGS   := -std=c17 -O2 -g
 CPPFLAGS := -I$(INCLUDE_DIR) -MMD -MP
 LDFLAGS  := -L$(LIB_DIR)
 LDLIBS   :=
@@ -38,10 +40,10 @@ CFLAGS += \
 
 # Clang-supported safety flags
 # CFLAGS += \
-#  -Werror -Walloca -Wcast-qual -Wconversion -Wformat=2  -Wformat-security     \
-#  -Wnull-dereference -Wstack-protector -Wvla -Warray-bounds                   \
-#  -Warray-bounds-pointer-arithmetic -Wassign-enum -Wbad-function-cast         \
-#  -Wconditional-uninitialized -Wconversion -Wfloat-equal                      \
+#  -Werror -Wall -Wextra -Wpedantic -Walloca -Wcast-qual -Wconversion          \
+#  -Wformat=2  -Wformat-security -Wnull-dereference -Wstack-protector -Wvla    \
+#  -Warray-bounds -Warray-bounds-pointer-arithmetic -Wassign-enum              \
+#  -Wbad-function-cast -Wconditional-uninitialized -Wconversion -Wfloat-equal  \
 #  -Wformat-type-confusion -Widiomatic-parentheses -Wimplicit-fallthrough      \
 #  -Wloop-analysis -Wpointer-arith -Wshift-sign-overflow -Wshorten-64-to-32    \
 #  -Wswitch-enum -Wtautological-constant-in-range-compare                      \
@@ -55,16 +57,19 @@ build: $(EXE)
 
 run: build
 	./$(EXE)
+
 clean:
 	@rm -rf --preserve-root=all $(BIN_DIR) $(OBJ_DIR)
 
 $(EXE): $(OBJ) | $(BIN_DIR)
 	$(CC) $(LDFLAGS) $^ $(LDLIBS) -o $@
 
-$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR)
+OBJ_SUBDIRS := $(foreach sub, $(SRC_SUBDIRS), $(OBJ_DIR)/$(sub))
+
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.c | $(OBJ_DIR) $(OBJ_SUBDIRS)
 	$(CC) $(CPPFLAGS) $(CFLAGS) -c $< -o $@
 
-$(BIN_DIR) $(OBJ_DIR):
+$(BIN_DIR) $(OBJ_DIR) $(OBJ_SUBDIRS):
 	mkdir -p $@
 
--include $(OBJ:.o=.d)
+-include $(patsubst %.o, %.d, $(OBJ))
