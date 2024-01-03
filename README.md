@@ -1,2 +1,2 @@
 # c-project-template
-A base directory structure and Makefile for large-scale project built with C.
+Directory structure and Makefile for large-scale projects built with C.
